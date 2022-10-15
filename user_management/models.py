@@ -1,4 +1,7 @@
 from django.db import models
+import string
+import random
+import functools
 
 # Create your models here.
 from django.db import models
@@ -53,9 +56,51 @@ class CustomAccountManager(BaseUserManager):
         user.set_password(password)
         user.save()
         return user
+    
+def generate__code(limit, prefix, model, field):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    flag_check = True
+    _code = None
+    display_code = None
+    
+    try:
+        _code_list = model.objects.values_list(field, flat=True)
+    except:
+        print("ERROR!")
+        
+    try:
+        while flag_check:
+            _code = "".join(random.choices(list(characters), k=limit))
+            display_code = f"#{prefix}{_code}"
+            
+            if display_code not in _code_list:
+                flag_check = False
+                
+    except ValueError:
+        print("ERROR")
+                    
+    return display_code
 
+def _user_code():
+    return functools.partial(
+        generate__code, 
+        limit=10, 
+        prefix="", 
+        model=NewUser,
+        field="code"
+    )()
+
+generate__user_code = _user_code
 
 class NewUser(AbstractBaseUser, PermissionsMixin):
+    id = models.AutoField(primary_key=True)
+    code = models.CharField(
+        verbose_name="User Code", 
+        max_length=255, 
+        null=True, 
+        unique=True, 
+        default=generate__user_code
+    )
     email = models.EmailField(_('email address'), unique=True)
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=150, blank=True)

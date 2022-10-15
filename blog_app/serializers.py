@@ -36,38 +36,60 @@ class PostSerializer(serializers.ModelSerializer):
         
         return data
 
-    def create(self, request):
-        # initial data
-        initial_data = self.initial_data
-     
+    def create(self, request):   
         # save validated data
         instance = self.Meta.model(**self.validated_data)
         instance.save()
         
+        # initial data
+        initial_data = self.initial_data
+        
         # save images
         image = request.FILES.getlist("post_image", None)
-        print(image)
+       
+        if len(image) > 0:  
+            instance.post_image.create(image_content=image[0])
         
-        if len(image) > 0:
-            post = self.Meta.model.objects.get(id=instance.id)
+        # add sections
+        sections = initial_data.get("post_section")
         
-            image = Image(
-                image_content=image[0], 
-                image_related_post=post
-            )
+        if len(sections) > 0:
+            # author, title, content, public
+            author = instance.post_author
+            
+            for section in sections:
+                section_obj = Section(
+                    section_post=instance,
+                    section_author=author,
+                    section_title=section.get("section_title", None),
+                    section_content=section.get("section_content", None),
+                    section_public=bool(section.get("section_public", None))
+                )
+                
+                section_obj.save()
+                 
+                images  = section.get("section_image")
+                
+                print(images)
           
+                if len(images) > 0:
+                    for image in images:
+                        section_obj.section_image.create(
+                            image_related_post=instance,
+                            image_content=image
+                        )
+            
         return instance
         
-        # pass
-
+        
 class SectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Section
         fields = "__all__"
         
     def validate(self, data):
-        print("[validate]: inside validate")
-        print(data)
+        # print("[validate]: inside validate")
+        # print(data)
         
         # initial data
         # initial_data = self.initial_data
@@ -81,7 +103,7 @@ class SectionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # initial data
         initial_data = self.initial_data
-        print(initial_data)
+        # print(initial_data)
         
         # save validated data
         instance = self.Meta.model(**validated_data)

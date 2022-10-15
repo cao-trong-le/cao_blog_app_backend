@@ -30,14 +30,24 @@ def get_image_filepath(instance, filename):
     valid_class_names = ["Image"]
     _index = valid_class_names.index(obj_class_name)
     _lowered_class_name = valid_class_names[_index].lower()
-    return f"{_lowered_class_name}_images/{filename}"
+    
+    # instance fields
+    keys = instance.__dict__.keys()
+    code = None
+    
+    for key in keys:
+        if "code" in key:
+            code = getattr(instance, key)
+            break
+    
+    return f"{_lowered_class_name}_images/{code}/{filename}"
 
-def generate__code(limit, prefix, model):
+def generate__code(limit, prefix, model, field):
     characters = string.ascii_letters + string.digits + string.punctuation
     flag_check = True
     _code = None
     display_code = None
-    _code_list = model.objects.values_list("post_code", flat=True)
+    _code_list = model.objects.values_list(field, flat=True)
     
     while flag_check:
         _code = "".join(random.choices(list(characters), k=limit))
@@ -49,13 +59,31 @@ def generate__code(limit, prefix, model):
     return display_code
 
 def _post_code():
-    return functools.partial(generate__code, limit=10, prefix="POST", model=Post)()
+    return functools.partial(
+        generate__code, 
+        limit=10, 
+        prefix="POST", 
+        model=Post,
+        field="post_code"
+    )()
 
 def _image_code():
-    return functools.partial(generate__code, limit=10, prefix="IMAGE", model=Image)()
+    return functools.partial(
+        generate__code, 
+        limit=10, 
+        prefix="IMAGE", 
+        model=Image,
+        field="image_code"
+    )()
 
 def _comment_code():
-    return functools.partial(generate__code, limit=10, prefix="COMMENT", model=Comment)()
+    return functools.partial(
+        generate__code, 
+        limit=10, 
+        prefix="COMMENT", 
+        model=Comment,
+        field="comment_code"
+    )()
 
 generate__post_code = _post_code
 generate__comment_code = _comment_code
@@ -230,7 +258,7 @@ class Image(models.Model):
     id = models.AutoField(primary_key=True)
     image_code = models.CharField(
         verbose_name="Image Code", 
-        max_length=15, 
+        max_length=30, 
         null=False, 
         unique=True, 
         default=generate__image_code

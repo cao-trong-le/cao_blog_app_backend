@@ -18,6 +18,7 @@ import datetime
 import json
 
 from django.contrib.auth.models import User
+
 from .event_handlers import EventHandler
 
 # Create your views here.
@@ -28,13 +29,14 @@ class PostView(APIView):
     return_data = None
     
     def get(self, request, key):
-        event_handler = None
+        event_handler = EventHandler(request)
         
         if request.method == 'GET':
+            # print(request.GET.get("key", None), key, user_code)
             if (key == "all"):
-                self.return_data = event_handler.base_event_handler.get_all_bases()
+                self.return_data = event_handler.post_event_handler.get_all()
             else:
-                self.return_data = event_handler.base_event_handler.get_bases(key)
+                self.return_data = event_handler.post_event_handler.get_related()
             
                 # data = self.serializer_class(bases, many=True).data
             return Response({"data": self.return_data}, status=status.HTTP_200_OK)
@@ -51,10 +53,18 @@ class PostView(APIView):
     def post(self, request):
         event_handler = EventHandler(request)
         
-        print(request.FILES.get("post_image"))
-        
         if request.method == "POST":
             event = request.data.get("event", None)
+            
+            # print(event, request.data)
+            
+            if event == "get_user_posts":
+                return_data = event_handler.post_event_handler.get_user_posts()
+                return Response(return_data, status=status.HTTP_200_OK)
+            
+            # if event == "get_user_post":
+            #     return_data = event_handler.post_event_handler.get_all()
+            #     return Response(return_data, status=status.HTTP_200_OK)
             
             if event == "add_post":
                 return_data = event_handler.post_event_handler.add_post()
