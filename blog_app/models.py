@@ -1,4 +1,5 @@
 from __future__ import annotations
+from email.policy import default
 from django.db import models
 # Create your models here.
 
@@ -30,6 +31,7 @@ def get_image_filepath(instance, filename):
     valid_class_names = ["Image"]
     _index = valid_class_names.index(obj_class_name)
     _lowered_class_name = valid_class_names[_index].lower()
+    user_code = instance.image_related_post.post_author.code
     
     # instance fields
     keys = instance.__dict__.keys()
@@ -40,10 +42,26 @@ def get_image_filepath(instance, filename):
             code = getattr(instance, key)
             break
     
-    return f"{_lowered_class_name}_images/{code}/{filename}"
+    return f"{_lowered_class_name}_container/{user_code}/{code}"
+
+def get_file_filepath(instance, filename):
+    obj_class_name = instance.__class__.__name__
+    _lowered_class_name = obj_class_name.lower()
+    user_code = instance.file_related_section.section_author.code
+    
+    # instance fields
+    keys = instance.__dict__.keys()
+    code = None
+    
+    for key in keys:
+        if "code" in key:
+            code = getattr(instance, key)
+            break
+    
+    return f"{_lowered_class_name}_container/{user_code}/{code}/{filename}"
 
 def generate__code(limit, prefix, model, field):
-    characters = string.ascii_letters + string.digits + string.punctuation
+    characters = string.ascii_letters + string.digits
     flag_check = True
     _code = None
     display_code = None
@@ -51,7 +69,7 @@ def generate__code(limit, prefix, model, field):
     
     while flag_check:
         _code = "".join(random.choices(list(characters), k=limit))
-        display_code = f"#{prefix}{_code}"
+        display_code = f"{prefix}{_code}"
         
         if display_code not in _code_list:
             flag_check = False
@@ -75,6 +93,15 @@ def _image_code():
         model=Image,
         field="image_code"
     )()
+    
+def _file_code():
+    return functools.partial(
+        generate__code, 
+        limit=10, 
+        prefix="FILE", 
+        model=File,
+        field="file_code"
+    )()
 
 def _comment_code():
     return functools.partial(
@@ -88,6 +115,7 @@ def _comment_code():
 generate__post_code = _post_code
 generate__comment_code = _comment_code
 generate__image_code = _image_code
+generate__file_code = _file_code
 
 class Post(models.Model):
     id = models.AutoField(primary_key=True)
@@ -107,7 +135,7 @@ class Post(models.Model):
         verbose_name="Post Title", 
         max_length=255, 
         null=False, 
-        unique=True
+        unique=False
     )
     post_summary = models.TextField(
         verbose_name="Post Summary", 
@@ -134,6 +162,10 @@ class Post(models.Model):
     post_date = models.DateTimeField(
         verbose_name="Post Date",
         auto_now_add=True,
+    )
+    post_finished = models.BooleanField(
+        verbose_name="Post Finished",
+        default=False
     )
     
     def __str__(self):
@@ -272,6 +304,9 @@ class Image(models.Model):
     )
     image_related_post = models.ForeignKey(
         to=Post, 
+        blank=True,
+        null=True,
+        default="",
         related_name="post_image",
         on_delete=models.CASCADE
     )
@@ -279,6 +314,7 @@ class Image(models.Model):
         to=Section, 
         blank=True,
         null=True,
+        default="",
         related_name="section_image",
         on_delete=models.CASCADE
     )
@@ -287,5 +323,42 @@ class Image(models.Model):
         return self.image_code
 
 
-
-
+class File(models.Model):
+    file_code = models.CharField(
+        verbose_name="File Code", 
+        max_length=30, 
+        null=False, 
+        unique=True, 
+        default=generate__file_code
+    )
+    file_type = models.CharField(
+        verbose_name="File Type", 
+        max_length=30, 
+        null=False, 
+        unique=False, 
+        default=""
+    )
+    file_content = models.FileField(
+        verbose_name="File Content", 
+        upload_to=get_file_filepath, 
+        null=True, 
+        default=None,
+        storage=PublicMediaStorage()
+    )
+    file_related_post = models.ForeignKey(
+        to=Post, 
+        blank=True,
+        null=True,
+        related_name="post_file",
+        on_delete=models.CASCADE
+    )
+    file_related_section = models.ForeignKey(
+        to=Section, 
+        blank=True,
+        null=True,
+        related_name="section_file",
+        on_delete=models.CASCADE
+    )
+    
+    def __str__(self):
+        return self.file_code
