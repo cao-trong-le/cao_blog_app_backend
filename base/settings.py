@@ -31,6 +31,9 @@ DEBUG = str(os.environ.get("DEBUG")) == "1"
 
 # if not DEBUG:
 SECRET_KEY = os.environ.get("SECRET_KEY")
+
+print(SECRET_KEY)
+
 ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOST")]
 
 
