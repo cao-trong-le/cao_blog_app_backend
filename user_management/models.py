@@ -59,26 +59,9 @@ class CustomAccountManager(BaseUserManager):
     
 def generate__code(limit, prefix, model, field):
     characters = string.ascii_letters + string.digits + string.punctuation
-    flag_check = True
-    _code = None
-    display_code = None
-    
-    try:
-        _code_list = model.objects.values_list(field, flat=True)
-    except:
-        print("ERROR!")
-        
-    try:
-        while flag_check:
-            _code = "".join(random.choices(list(characters), k=limit))
-            display_code = f"#{prefix}{_code}"
-            
-            if display_code not in _code_list:
-                flag_check = False
-                
-    except ValueError:
-        print("ERROR")
-                    
+    _code = "".join(random.choices(list(characters), k=limit))
+    display_code = f"#{prefix}{_code}"
+          
     return display_code
 
 def _user_code():
