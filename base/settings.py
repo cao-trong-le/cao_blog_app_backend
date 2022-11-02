@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG")
+DEBUG = True if str(os.environ.get("DEBUG")) == "True" else False
 # ALLOWED_HOSTS = []
 
 # if not DEBUG:
@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'base.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if os.environ.get("DEBUG"):
+if DEBUG:
     POSTGRES_DB = os.environ.get("POSTGRES_DB")
     POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
     POSTGRES_USER = os.environ.get("POSTGRES_USER")
